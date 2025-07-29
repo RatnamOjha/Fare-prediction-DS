@@ -11,7 +11,7 @@ from src.exceptions import CustomException
 from sklearn.model_selection import GridSearchCV
 from src.logger import logging
 
-def save_object(file_path,obj):
+def save_object(file_path, obj):
     try:
         dir_path = os.path.dirname(file_path)
         os.makedirs(dir_path, exist_ok=True)
@@ -38,9 +38,11 @@ def evaluate_models(X_train, y_train, X_test, y_test, models, param):
                 model.fit(X_train, y_train)
                 best_model = model
                 logging.info(f"No hyperparameters tuned for {model_name}, using default.")
-                y_train_pred = best_model.predict(X_train)
-                y_test_pred = best_model.predict(X_test)
-                train_model_score = r2_score(y_train, y_train_pred)
+
+            # Predict and calculate scores
+            y_train_pred = best_model.predict(X_train)
+            y_test_pred = best_model.predict(X_test)
+            train_model_score = r2_score(y_train, y_train_pred)
             test_model_score = r2_score(y_test, y_test_pred)
 
             logging.info(f"{model_name} train score: {train_model_score:.4f}, test score: {test_model_score:.4f}")
@@ -50,7 +52,6 @@ def evaluate_models(X_train, y_train, X_test, y_test, models, param):
 
     except Exception as e:
         raise CustomException(e, sys)
-        logging.info("Model evaluation completed")
 
 def load_object(file_path):
     try:

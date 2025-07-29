@@ -10,18 +10,14 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 from src.exceptions import CustomException
-from src.logger import setup_logging
-import logging
+from src.logger import logging
 
 from src.utils import save_object
-
-# Set up logging and get module-specific logger
-setup_logging()
-logger = logging.getLogger(__name__)
+# The following print statements have been moved to the appropriate location after train_df and test_df are defined.
 
 @dataclass
 class DataTransformationConfig:
-    preprocessor_obj_file_path = os.path.join('artifacts', "proprocessor.pkl")
+    preprocessor_obj_file_path = os.path.join('artifacts', "model.pkl")
 
 class DataTransformation:
     def __init__(self):
@@ -32,43 +28,101 @@ class DataTransformation:
         This function is responsible for data transformation.
         '''
         try:
-            numerical_features = [
+            numerical_columns = [
                 'passenger_count', 'distance', 'is rush hour',
                 'is a group trip', 'fare_per_km',
                 'fare_per_passenger', 'passenger_count_log'
             ]
-            categorical_features = []
+            categorical_columns = []
 
             numerical_pipeline = Pipeline(steps=[
                 ('imputer', SimpleImputer(strategy='median')),
                 ('scaler', StandardScaler())
             ])
 
-            categorical_pipeline = Pipeline(steps=[
-                ('imputer', SimpleImputer(strategy='most_frequent')),
-                ('onehotencoder', OneHotEncoder(handle_unknown='ignore'))
-            ])
+            categorical_pipeline=Pipeline(
 
-            preprocessor = ColumnTransformer(
-                transformers=[
-                    ('num', numerical_pipeline, numerical_features),
-                    ('cat', categorical_pipeline, categorical_features)
+                steps=[
+                ("imputer",SimpleImputer(strategy="most_frequent")),
+                ("one_hot_encoder",OneHotEncoder()),
+                ("scaler",StandardScaler(with_mean=False))
                 ]
+
             )
 
-            logger.info("Preprocessing pipeline created successfully.")
+            logging.info(f"Categorical columns: {categorical_columns}")
+            logging.info(f"Numerical columns: {numerical_columns}")
+
+            preprocessor=ColumnTransformer(
+                [
+                ("num_pipeline",numerical_pipeline,numerical_columns),
+                ("cat_pipelines",categorical_pipeline,categorical_columns)
+
+                ]
+
+
+            )
+
             return preprocessor
+        
         except Exception as e:
-            logger.error(f"Error occurred in get_data_transformer_object: {e}")
-            raise CustomException(e, sys)
+            raise CustomException(e,sys)
+        
+    def initiate_data_transformation(self,train_path,test_path):
 
-if __name__ == "__main__":
-    try:
-        logger.info("Starting data transformation script.")
-        transformer = DataTransformation()
-        preprocessing_obj = transformer.get_data_transformer_object()
-        logger.info("Preprocessing object initialized in __main__.")
-    except Exception as e:
-        logger.exception("Exception occurred in __main__.")
-        print(f"Error occurred: {e}")
+        try:
+            train_df=pd.read_csv(train_path)
+            test_df=pd.read_csv(test_path)
 
+            logging.info("Read train and test data completed")
+            logging.info("Read train and test data completed")
+            print("Train DataFrame columns:", train_df.columns)
+            print("Test DataFrame columns:", test_df.columns)
+            logging.info("Obtaining preprocessing object")
+
+            preprocessing_obj=self.get_data_transformer_object()
+
+            target_column_name="fare_amount"
+            numerical_columns = ["passenger_count", "distance", "is rush hour",
+                                 "is a group trip", "fare_per_km",
+                                 "fare_per_passenger", "passenger_count_log"]
+            categorical_columns = []
+
+            input_feature_train_df=train_df.drop(columns=[target_column_name],axis=1)
+            target_feature_train_df=train_df[target_column_name]
+
+            input_feature_test_df=test_df.drop(columns=[target_column_name],axis=1)
+            target_feature_test_df=test_df[target_column_name]
+            
+            logging.info(
+                f"Applying preprocessing object on training dataframe and testing dataframe."
+            )
+
+            input_feature_train_arr=preprocessing_obj.fit_transform(input_feature_train_df)
+            input_feature_test_arr=preprocessing_obj.transform(input_feature_test_df)
+
+            train_arr = np.c_[
+                input_feature_train_arr, np.array(target_feature_train_df)
+            ]
+            test_arr = np.c_[input_feature_test_arr, np.array(target_feature_test_df)]
+
+            logging.info(f"Saved preprocessing object.")
+
+            save_object(
+
+                file_path=self.data_transformation_config.preprocessor_obj_file_path,
+                obj=preprocessing_obj
+
+            )
+
+            return (
+                train_arr,
+                test_arr,
+                self.data_transformation_config.preprocessor_obj_file_path,
+            )
+        except Exception as e:
+            raise CustomException(e,sys)
+        
+
+
+        
