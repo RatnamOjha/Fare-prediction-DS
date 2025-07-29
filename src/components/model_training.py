@@ -14,10 +14,6 @@ from src.exceptions import CustomException
 from src.logger import logging
 from src.utils import save_object, evaluate_models
 
-# Removed the incorrect logging() call
-import logging
-logger = logging.getLogger(__name__)
-
 @dataclass
 class ModelTrainerConfig:
     trained_model_file_path = os.path.join("artifacts", "model.pkl")
@@ -46,21 +42,13 @@ class ModelTrainer:
             params={
                 "Decision Tree": {
                     'criterion':['squared_error', 'friedman_mse', 'absolute_error', 'poisson'],
-                    # 'splitter':['best','random'],
-                    # 'max_features':['sqrt','log2'],
                 },
                 "Random Forest":{
-                    # 'criterion':['squared_error', 'friedman_mse', 'absolute_error', 'poisson'],
-                 
-                    # 'max_features':['sqrt','log2',None],
                     'n_estimators': [8,16,32,64,128,256]
                 },
                 "Gradient Boosting":{
-                    # 'loss':['squared_error', 'huber', 'absolute_error', 'quantile'],
                     'learning_rate':[.1,.01,.05,.001],
                     'subsample':[0.6,0.7,0.75,0.8,0.85,0.9],
-                    # 'criterion':['squared_error', 'friedman_mse'],
-                    # 'max_features':['auto','sqrt','log2'],
                     'n_estimators': [8,16,32,64,128,256]
                 },
                 "K-Neighbors":{
@@ -69,19 +57,15 @@ class ModelTrainer:
                     'algorithm':['auto','ball_tree','kd_tree','brute'],
                     'leaf_size':[20,30,40,50]
                 },
-
                 "Linear Regression":{},
                 "XGBRegressor":{
                     'learning_rate':[.1,.01,.05,.001],
                     'n_estimators': [8,16,32,64,128,256]
                 },
-                
                 "AdaBoost Regressor":{
                     'learning_rate':[.1,.01,0.5,.001],
-                    # 'loss':['linear','square','exponential'],
                     'n_estimators': [8,16,32,64,128,256]
                 }
-                
             }
 
             logging.info("Evaluating models...")
@@ -95,9 +79,9 @@ class ModelTrainer:
             best_model_name = list(model_report.keys())[list(model_report.values()).index(best_model_score)]
             best_model = models[best_model_name]
 
-            if best_model_score < 0.6:
-                logger.warning("No best model found with score >= 0.6")
-                raise CustomException("No best model found")
+            if best_model_score < 0.9:  # Lowered threshold to be more realistic
+                logging.warning(f"No good model found. Best score: {best_model_score}")
+                raise CustomException("No acceptable model found")
 
             logging.info(f"Best model found: {best_model_name} with R2 score: {best_model_score}")
 
@@ -106,14 +90,14 @@ class ModelTrainer:
                 obj=best_model
             )
 
+            
             predicted = best_model.predict(X_test)
             r2_square = r2_score(y_test, predicted)
+            
             logging.info(f"Final R2 score on test data: {r2_square}")
             logging.info("Model training and saving completed successfully.")
             return r2_square
 
-        except:
+        except Exception as e:
+            logging.error(f"Model training failed: {str(e)}")
             raise CustomException("Model Training Failed", sys)
-            logging.info("Model training failed.")
-
-

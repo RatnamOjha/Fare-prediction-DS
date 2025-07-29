@@ -6,7 +6,6 @@ from sklearn.metrics import r2_score
 import numpy as np
 import pandas as pd
 
-
 from src.exceptions import CustomException
 from sklearn.model_selection import GridSearchCV
 from src.logger import logging
@@ -20,7 +19,6 @@ def save_object(file_path, obj):
             dill.dump(obj, file_obj)
     except Exception as e:
         raise CustomException(e, sys)
-        
 
 def evaluate_models(X_train, y_train, X_test, y_test, models, param):
     try:
@@ -38,6 +36,9 @@ def evaluate_models(X_train, y_train, X_test, y_test, models, param):
                 model.fit(X_train, y_train)
                 best_model = model
                 logging.info(f"No hyperparameters tuned for {model_name}, using default.")
+
+            # 🔥 KEY FIX: Update the original models dictionary with the fitted model
+            models[model_name] = best_model
 
             # Predict and calculate scores
             y_train_pred = best_model.predict(X_train)
@@ -59,3 +60,4 @@ def load_object(file_path):
             return dill.load(file_obj)
     except Exception as e:
         raise CustomException(e, sys)
+
