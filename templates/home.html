@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uber Fare Prediction</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="number"], select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #e2e3e5;
+            border: 1px solid #d6d8db;
+            color: #383d41;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚗 Uber Fare Prediction</h1>
+        
+        <div class="info">
+            <strong>Instructions:</strong><br>
+            • Rush Hour: 1 = Yes, 0 = No<br>
+            • Group Trip: 1 = Yes, 0 = No<br>
+            • Passenger Count Log: Use ln(passenger_count). For 1 passenger = 0, for 2 = 0.693, for 3 = 1.099
+        </div>
+
+        <form action="/predictdata" method="post">
+            <div class="form-group">
+                <label for="passenger_count">Passenger Count:</label>
+                <input type="number" id="passenger_count" name="passenger_count" 
+                       min="1" max="6" value="1" required>
+            </div>
+
+            <div class="form-group">
+                <label for="distance">Distance (km):</label>
+                <input type="number" id="distance" name="distance" 
+                       step="0.1" min="0.1" value="5.0" required>
+            </div>
+
+            <div class="form-group">
+                <label for="is_rush_hour">Is Rush Hour:</label>
+                <select id="is_rush_hour" name="is_rush_hour" required>
+                    <option value="0">No (0)</option>
+                    <option value="1">Yes (1)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="is_a_group_trip">Is Group Trip:</label>
+                <select id="is_a_group_trip" name="is_a_group_trip" required>
+                    <option value="0">No (0)</option>
+                    <option value="1">Yes (1)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="fare_per_km">Fare Per KM:</label>
+                <input type="number" id="fare_per_km" name="fare_per_km" 
+                       step="0.01" min="0.1" value="2.5" required>
+            </div>
+
+            <div class="form-group">
+                <label for="fare_per_passenger">Fare Per Passenger:</label>
+                <input type="number" id="fare_per_passenger" name="fare_per_passenger" 
+                       step="0.01" min="0.1" value="10.0" required>
+            </div>
+
+            <div class="form-group">
+                <label for="passenger_count_log">Passenger Count Log:</label>
+                <input type="number" id="passenger_count_log" name="passenger_count_log" 
+                       step="0.001" min="0" value="0.000" required>
+            </div>
+
+            <button type="submit">Predict Fare</button>
+        </form>
+
+        {% if results %}
+        <div class="result">
+            <h2>Predicted Fare: {{ results }}</h2>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        // Auto-calculate passenger_count_log when passenger_count changes
+        document.getElementById('passenger_count').addEventListener('input', function() {
+            const passengerCount = parseInt(this.value);
+            const logValue = passengerCount > 0 ? Math.log(passengerCount).toFixed(3) : 0;
+            document.getElementById('passenger_count_log').value = logValue;
+        });
+
+        // Auto-calculate fare_per_passenger when distance or passenger_count changes
+        function updateFarePerPassenger() {
+            const distance = parseFloat(document.getElementById('distance').value) || 0;
+            const passengerCount = parseInt(document.getElementById('passenger_count').value) || 1;
+            const farePerKm = parseFloat(document.getElementById('fare_per_km').value) || 2.5;
+            
+            const totalFare = distance * farePerKm;
+            const farePerPassenger = totalFare / passengerCount;
+            
+            document.getElementById('fare_per_passenger').value = farePerPassenger.toFixed(2);
+        }
+
+        document.getElementById('distance').addEventListener('input', updateFarePerPassenger);
+        document.getElementById('passenger_count').addEventListener('input', updateFarePerPassenger);
+        document.getElementById('fare_per_km').addEventListener('input', updateFarePerPassenger);
+    </script>
+</body>
+</html>
