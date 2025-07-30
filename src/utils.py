@@ -37,7 +37,7 @@ def evaluate_models(X_train, y_train, X_test, y_test, models, param):
                 best_model = model
                 logging.info(f"No hyperparameters tuned for {model_name}, using default.")
 
-            # 🔥 KEY FIX: Update the original models dictionary with the fitted model
+            
             models[model_name] = best_model
 
             # Predict and calculate scores

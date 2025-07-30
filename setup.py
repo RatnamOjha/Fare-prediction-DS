@@ -16,7 +16,7 @@ current_dir = os.path.dirname(__file__)
 requirements_path = os.path.join(current_dir, 'requirements.txt')
 
 setup(
-    name='crop_recommendation',
+    name='uber_fare_prediction',
     version='0.0.1',
     author='Ratnam',
     author_email='ratnamojha71@gmail.com',
