@@ -40,5 +40,3 @@ def predict_datapoint():
         except Exception as e:
             return render_template('home.html', results=f"Error: {str(e)}")
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", debug=True, port=8000)
